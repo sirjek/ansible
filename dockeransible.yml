@@ -3,12 +3,6 @@
   gather_facts: no
   tasks:
 
-    - name: Install Software
-      yum:
-        name:
-          - python3-pip
-          - docker-compose
-
     - name: copy
       copy:
         src: app/
