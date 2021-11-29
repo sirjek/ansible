@@ -1,0 +1,19 @@
+- name: Run using a project directory
+  hosts: all
+  gather_facts: no
+  tasks:
+
+    - name: Install Software for RH124 on AWS Instance
+      yum:
+        name:
+          - python3-pip
+          - docker-compose
+
+    - name: copy
+      copy:
+        src: app/
+        dest: test/
+    - name: Create and start services
+      community.docker.docker_compose:
+        project_src: test/
+      register: output

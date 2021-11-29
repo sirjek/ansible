@@ -1,0 +1,71 @@
+- name: ec2
+  hosts: all
+  vars:
+    aws_region: eu-central-1
+  tasks:
+    - name: create vpc
+      ec2_vpc_net:
+        name: ansible_vpc
+        cidr_block: 10.10.0.0/16
+        region: "{{ aws_region }}"
+        tenancy: default
+      register: ansible_vpc
+
+    - name: create igw
+      ec2_vpc_igw:
+        vpc_id: "{{ ansible_vpc.vpc.id }}"
+        region: "{{ aws_region }}"
+        state: present
+      register: ansible_igw
+
+    - name: create subnet
+      ec2_vpc_subnet:
+        state: present
+        vpc_id: "{{ ansible_vpc.vpc.id }}"
+        cidr: 10.10.0.0/20
+        region: "{{ aws_region }}"
+      register: ansible_subnet
+
+    - name: create route table
+      ec2_vpc_route_table:
+        vpc_id: "{{ ansible_vpc.vpc.id }}"
+        region: "{{ aws_region }}"
+        subnets:
+           - "{{ ansible_subnet.subnet.id }}"
+
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ ansible_igw.gateway_id }}"
+
+    - name: security group
+      ec2_group:
+        name: ansible_sg
+        vpc_id: "{{ ansible_vpc.vpc.id }}"
+        region: "{{ aws_region }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            ports:
+              - 3000
+            cidr_ip: 0.0.0.0/0
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+      register: ansible_sg
+      
+    - name: ec2 instance
+      ec2:
+        region: "{{ aws_region }}"
+        key_name: ansible.pem
+        instance_type: t2.micro
+        image: ami-00d5e377dd7fad751
+        wait: yes
+        group: ansible_sg
+        count: 1
+        vpc_subnet_id: "{{ ansible_subnet.subnet.id }}"
+        assign_public_ip: yes
+
+    
