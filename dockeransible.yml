@@ -3,7 +3,7 @@
   gather_facts: no
   tasks:
 
-    - name: Install Software for RH124 on AWS Instance
+    - name: Install Software
       yum:
         name:
           - python3-pip
